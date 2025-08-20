@@ -29,21 +29,22 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
+  
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
-
+  
   useEffect(() => {
     if (loaded) {
       SplashScreen.hideAsync();
     }
   }, [loaded]);
-
+  
   if (!loaded) {
     return null;
   }
-
+  
   return <RootLayoutNav />;
 }
 
@@ -56,6 +57,8 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)" options={{
             header: () => <AppHeader />,
           }} />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
