@@ -5,30 +5,44 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/src/store/auth';
 import { router } from 'expo-router';
 
-function ProgressBar({ value = 0 }) {
-  const v = Math.max(0, Math.min(100, value));
-  return (
-    <View style={{ height: 8, borderRadius: 999, backgroundColor: '#202a3b' }}>
-      <View style={{ height: 8, width: `${v}%`, borderRadius: 999, backgroundColor: '#22c55e' }} />
-    </View>
-  );
+/** Clasifica el estado de “fiabilidad de pago” del usuario */
+function getPaymentProfileStatus(credScore?: number, onTimeRate?: number) {
+  const cs = typeof credScore === 'number' ? credScore : 50;
+  const ot = typeof onTimeRate === 'number' ? onTimeRate : 0.5;
+
+  if (cs >= 85 && ot >= 0.9) {
+    return { label: 'Acreedor sólido', icon: 'shield-checkmark-outline' as const, fg: '#22c55e', bg: 'rgba(34,197,94,0.12)' };
+  }
+  if (cs >= 70 || ot >= 0.8) {
+    return { label: 'Pagador puntual', icon: 'time-outline' as const, fg: '#84cc16', bg: 'rgba(132,204,22,0.12)' };
+  }
+  if ((cs >= 40 && cs <= 59) || (ot >= 0.5 && ot <= 0.69)) {
+    return { label: 'Deudor ocasional', icon: 'warning-outline' as const, fg: '#f59e0b', bg: 'rgba(245,158,11,0.12)' };
+  }
+  if (cs < 40 || ot < 0.5) {
+    return { label: 'Deudado crítico', icon: 'alert-circle-outline' as const, fg: '#ef4444', bg: 'rgba(239,68,68,0.12)' };
+  }
+  return { label: 'Neutro', icon: 'help-circle-outline' as const, fg: '#93c5fd', bg: 'rgba(147,197,253,0.12)' };
 }
 
 export default function AppHeader() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
+  const status = getPaymentProfileStatus(user?.credScore, user?.onTimeRate);
+  const onTimePct = Math.round((user?.onTimeRate ?? 0) * 100);
+
   return (
     <LinearGradient
       colors={['#0b1220', '#111827']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={{ paddingTop: insets.top, paddingBottom: 12 }}
+      style={{ paddingTop: insets.top +10, paddingBottom: 12 }}
     >
-      <View style={{ paddingHorizontal: 16, gap: 12 }}>
-        {/* fila superior */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ paddingHorizontal: 16 }}>
+        {/* Fila superior: avatar + nombre + ajustes */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
             <Image
               source={
                 user?.avatarUrl
@@ -37,15 +51,41 @@ export default function AppHeader() {
               }
               style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#1f2937' }}
             />
-            <View>
-              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+            <View style={{ flex: 1 }}>
+              {/* 1) Nombre */}
+              <Text numberOfLines={1} style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
                 {user?.name ?? 'Usuario'}
               </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <Ionicons name="flame-outline" size={14} color="#f59e0b" />
-                <Text style={{ color: '#cbd5e1', fontSize: 12 }}>
-                  Racha {user?.streakDays ?? 0} días
-                </Text>
+
+              {/* 2) Único bloque compacto: badge + porcentaje */}
+              <View
+                style={{
+                  marginTop: 6,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                }}
+              >
+
+                {/* badge */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    backgroundColor: status.bg,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: '#1f2a44',
+                  }}
+                >
+                  <Ionicons name={status.icon} size={14} color={status.fg} />
+                  <Text style={{ color: status.fg, fontSize: 12, fontWeight: '800' }}>
+                    {status.label} {onTimePct}%
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
@@ -53,21 +93,6 @@ export default function AppHeader() {
           <Pressable onPress={() => router.push('/(tabs)/settings')} style={{ padding: 6 }}>
             <Ionicons name="settings-outline" size={22} color="#e2e8f0" />
           </Pressable>
-        </View>
-
-        {/* stats */}
-        <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 12, gap: 8 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ color: '#e5e7eb', fontWeight: '600' }}>CredScore</Text>
-            <Text style={{ color: '#a7f3d0', fontWeight: '800' }}>{user?.credScore ?? 0}</Text>
-          </View>
-          <ProgressBar value={user?.credScore ?? 0} />
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ color: '#94a3b8', fontSize: 12 }}>Pagos a tiempo</Text>
-            <Text style={{ color: '#94a3b8', fontSize: 12 }}>
-              {Math.round((user?.onTimeRate ?? 0) * 100)}%
-            </Text>
-          </View>
         </View>
       </View>
     </LinearGradient>
