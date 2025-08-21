@@ -1,7 +1,10 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Link, Tabs } from 'expo-router';
+import { Link, Tabs, Redirect } from 'expo-router';
 import { Pressable } from 'react-native';
+import { useAuth } from '@/src/store/auth';
+import { Ionicons } from '@expo/vector-icons';
+import { Platform } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -16,6 +19,10 @@ function TabBarIcon(props: {
 }
 
 export default function TabLayout() {
+  const { token, hydrated } = useAuth();
+  if (!hydrated) return null;
+  if (!token) return <Redirect href="/(auth)/login" />;
+
   const colorScheme = useColorScheme();
 
   return (

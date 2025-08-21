@@ -1,31 +1,38 @@
-import { StyleSheet } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { useAuth } from '@/src/store/auth';
+import { router } from 'expo-router';
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+export default function SettingsScreen() {
+  const { logout, user } = useAuth();
 
-export default function Settings() {
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/(auth)/login');
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/index.tsx" />
+    <View style={{ flex: 1, backgroundColor: '#0b1220', padding: 20 }}>
+      <Text style={{ color: '#e5e7eb', fontSize: 22, fontWeight: '800', marginBottom: 20 }}>
+        Ajustes
+      </Text>
+
+      <View style={{ marginBottom: 30 }}>
+        <Text style={{ color: '#94a3b8' }}>Usuario</Text>
+        <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>{user?.name}</Text>
+        <Text style={{ color: '#cbd5e1', fontSize: 14 }}>{user?.email}</Text>
+      </View>
+
+      <Pressable
+        onPress={handleLogout}
+        style={{
+          backgroundColor: '#ef4444',
+          borderRadius: 10,
+          paddingVertical: 12,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={{ color: '#fff', fontWeight: '700' }}>Cerrar sesión</Text>
+      </Pressable>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
-  },
-});

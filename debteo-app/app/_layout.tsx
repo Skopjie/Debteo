@@ -3,7 +3,10 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useAuth } from '@/src/store/auth';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
@@ -48,19 +51,42 @@ export default function RootLayout() {
   return <RootLayoutNav />;
 }
 
+function Hydrator({ children }: { children: React.ReactNode }) {
+  const { hydrate, hydrated } = useAuth();
+
+  useEffect(() => {
+    hydrate(); // aquí no lee storage, solo activa hydrated
+  }, []);
+
+  if (!hydrated) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator color="green" size="large" />
+      </View>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{
-            header: () => <AppHeader />,
-          }} />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Hydrator>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{
+                header: () => <AppHeader />,
+              }} />
+            <Stack.Screen name="login" />
+            <Stack.Screen name="register" />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+        </Hydrator>
+      </ThemeProvider>
   );
 }

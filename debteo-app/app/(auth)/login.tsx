@@ -2,14 +2,27 @@ import { View, Text, TextInput, Pressable, Platform } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useGoogleAuth } from '@/src/auth/useGoogleAuth';
+import { useAuth } from '@/src/store/auth';
 
 export default function LoginScreen() {
-  const { promptAsync } = useGoogleAuth((_profile) => {
-    // ✅ éxito → vamos a la app (tabs)
+  const { setUser, setToken } = useAuth();
+
+  // Google login
+  const { promptAsync } = useGoogleAuth(async (profile, tokens) => {
+    // normalmente mandarías idToken/accessToken al backend
+    await setToken(tokens?.accessToken ?? 'mock_token_google');
+    setUser({
+      id: profile.email ?? 'u_1',
+      name: profile.name ?? 'Usuario Google',
+      email: profile.email,
+      avatarUrl: profile.picture,
+      credScore: 75,
+      onTimeRate: 0.9,
+      streakDays: 5,
+    });
     router.replace('/(tabs)/dashboard');
   });
 
-  // estilos rápidos inline (puedes moverlos a StyleSheet si quieres)
   const label = { color: '#94a3b8', fontSize: 12, marginBottom: 6 };
   const input = {
     backgroundColor: '#0f172a',
@@ -19,6 +32,20 @@ export default function LoginScreen() {
     paddingHorizontal: 12,
     paddingVertical: Platform.OS === 'ios' ? 12 : 10,
     color: '#e5e7eb',
+  };
+
+  const handleMockLogin = async () => {
+    await setToken('mock_token_manual');
+    setUser({
+      id: 'u_1',
+      name: 'Nadia Martín',
+      email: 'nadia@example.com',
+      avatarUrl: undefined,
+      credScore: 82,
+      onTimeRate: 0.91,
+      streakDays: 12,
+    });
+    router.replace('/(tabs)/dashboard');
   };
 
   return (
@@ -37,7 +64,7 @@ export default function LoginScreen() {
       </View>
 
       <Pressable
-        onPress={() => router.replace('/(tabs)/dashboard')} // mock: entra directo
+        onPress={handleMockLogin}
         style={{
           backgroundColor: '#22c55e',
           borderRadius: 10,
