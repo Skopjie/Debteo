@@ -30,20 +30,13 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          position: 'absolute',
-          left: 12,
-          right: 12,
-          bottom: 12,
           backgroundColor: '#111827',
-          borderRadius: 16,
-          borderTopWidth: 0,
           height: 70,
           paddingBottom: 10,
           paddingTop: 6,
           shadowColor: '#000',
           shadowOpacity: 0.25,
-          shadowRadius: 16,
-          elevation: 12,
+
         },
         tabBarActiveTintColor: '#34d399',
         tabBarInactiveTintColor: '#9ca3af',
