@@ -1,4 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import Toast from 'react-native-toast-message';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -90,8 +91,18 @@ function RootLayoutNav() {
             />
 
             <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+
+            <Stack.Screen name="profile/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="group/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="group/create" options={{ headerShown: false }} />
+            <Stack.Screen name="friend/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="friend/add" options={{ headerShown: false }} />
+            <Stack.Screen name="group/[id]/info" options={{ headerShown: false }} />
+            <Stack.Screen name="modal/adjust-balance" options={{ headerShown: false }} />
+
           </Stack>
         </Hydrator>
+        <Toast />
       </ThemeProvider>
   );
 }

@@ -1,66 +1,48 @@
-import { View, Text, FlatList, Pressable, Image } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, FlatList, Pressable, Image, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { getMyGroups } from "@/src/services/group.service";
 
-// —— MOCK de grupos (sustituye por tus datos reales cuando tengas API/store)
 type Group = {
   id: string;
   name: string;
   avatarUrl?: string;
-  unreadCount: number;          // actividades sin leer
-  lastActivityText: string;     // resumen última actividad
-  lastActivityAt: string;       // “hace 2 h”, “ayer”, etc.
-  myNet: number;                // saldo del usuario en ese grupo (positivo => te deben)
+  membersCount: number;
+  myNet: number;
+  lastActivity: string; // ISO date
+  unread?: number;
 };
-
-const GROUPS: Group[] = [
-  {
-    id: "g1",
-    name: "Viaje a Roma",
-    avatarUrl: undefined,
-    unreadCount: 2,
-    lastActivityText: "Nadia añadió 36 € (Pizza)",
-    lastActivityAt: "hace 2 h",
-    myNet: 15.2,
-  },
-  {
-    id: "g2",
-    name: "Piso compartido",
-    avatarUrl: undefined,
-    unreadCount: 0,
-    lastActivityText: "Luis registró pago de 50 € (Luz)",
-    lastActivityAt: "ayer",
-    myNet: -8.0,
-  },
-  {
-    id: "g3",
-    name: "Cena viernes",
-    avatarUrl: undefined,
-    unreadCount: 1,
-    lastActivityText: "Ana subió 24 € (Restaurante)",
-    lastActivityAt: "hace 10 min",
-    myNet: 0,
-  },
-];
 
 function formatEUR(n: number) {
   return `${n.toFixed(2)} €`;
 }
 
-function UnreadBadge({ count }: { count: number }) {
+function formatTimeAgo(iso: string) {
+  const dt = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - dt.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "justo ahora";
+  if (diffMin < 60) return `hace ${diffMin} min`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `hace ${diffH} h`;
+  const diffD = Math.floor(diffH / 24);
+  return diffD === 1 ? "ayer" : `hace ${diffD} días`;
+}
+
+function UnreadBadge({ count = 0 }: { count: number }) {
   if (!count) return null;
   return (
-    <View
-      style={{
-        minWidth: 20,
-        paddingHorizontal: 6,
-        height: 20,
-        borderRadius: 10,
-        backgroundColor: "#22c55e",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <View style={{
+      minWidth: 20,
+      paddingHorizontal: 6,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: "#22c55e",
+      alignItems: "center",
+      justifyContent: "center",
+    }}>
       <Text style={{ color: "#0b1220", fontWeight: "800", fontSize: 11 }}>
         {count}
       </Text>
@@ -79,19 +61,17 @@ function NetPill({ value }: { value: number }) {
     : "rgba(239,68,68,0.12)";
   const label = isZero ? "0 €" : (isPos ? "+" : "") + formatEUR(value);
   return (
-    <View
-      style={{
-        width: 64,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingHorizontal: 8,
-        paddingVertical: 6,
-        borderRadius: 10,
-        backgroundColor: bg,
-        borderWidth: 1,
-        borderColor: "#1f2a44",
-      }}
-    >
+    <View style={{
+      width: 64,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+      borderRadius: 10,
+      backgroundColor: bg,
+      borderWidth: 1,
+      borderColor: "#1f2a44",
+    }}>
       <Text style={{ color, fontWeight: "800", fontSize: 12 }} numberOfLines={1}>
         {label}
       </Text>
@@ -109,7 +89,7 @@ function RightMeta({ time, unread }: { time: string; unread: number }) {
 }
 
 function GroupRow({ g }: { g: Group }) {
-  const goToGroup = () => router.push(`/group/${g.id}`); // cuando tengas la ruta de detalle
+  const goToGroup = () => router.push(`/group/${g.id}`);
 
   return (
     <Pressable
@@ -125,8 +105,6 @@ function GroupRow({ g }: { g: Group }) {
         borderBottomColor: "#101827",
       })}
     >
-
-      {/* AVATAR */}
       <Image
         source={
           g.avatarUrl
@@ -142,40 +120,92 @@ function GroupRow({ g }: { g: Group }) {
           borderColor: "#1f2a44",
         }}
       />
-
-      {/* CENTRO: nombre + última actividad */}
       <View style={{ flex: 1 }}>
-        <Text
-          numberOfLines={1}
-          style={{ color: "#e5e7eb", fontSize: 16, fontWeight: "700" }}
-        >
+        <Text numberOfLines={1} style={{ color: "#e5e7eb", fontSize: 16, fontWeight: "700" }}>
           {g.name}
         </Text>
         <Text numberOfLines={1} style={{ color: "#94a3b8", fontSize: 12 }}>
-          {g.lastActivityText}
+          {g.membersCount} miembros
         </Text>
       </View>
-
-      {/* DERECHA: hora + no leídos */}
-      <RightMeta time={g.lastActivityAt} unread={g.unreadCount} />
-      {/* IZQUIERDA DEL TODO: saldo global */}
+      <RightMeta time={formatTimeAgo(g.lastActivity)} unread={g.unread ?? 0} />
       <NetPill value={g.myNet} />
     </Pressable>
   );
 }
 
 export default function GroupsScreen() {
-  const goCreate = () => router.push("/group/create"); // cambia a tu ruta real
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const goCreate = () => router.push("/group/create");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getMyGroups();
+        setGroups(data);
+      } catch (err) {
+        console.error("Error al obtener grupos", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0b1220" }}>
-      <FlatList
-        data={GROUPS}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <GroupRow g={item} />}
-        ItemSeparatorComponent={() => null}
-        contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
-      />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color="#22c55e" />
+        </View>
+      ) : (
+        <FlatList
+          data={groups}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <GroupRow g={item} />}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
+          ListEmptyComponent={
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
+                <Image
+                  source={require("@/assets/images/splash-icon.png")}
+                  style={{
+                    width: 140,
+                    height: 140,
+                    marginBottom: 20,
+                    opacity: 0.85,
+                    tintColor: "#475569",
+                  }}
+                  resizeMode="contain"
+                />
+                <Text style={{ color: "#e5e7eb", fontWeight: "700", fontSize: 18, marginBottom: 6 }}>
+                  No hay grupos todavía
+                </Text>
+                <Text style={{ color: "#94a3b8", textAlign: "center", fontSize: 14, lineHeight: 20 }}>
+                  Crea un grupo para comenzar a compartir gastos
+                  con tus amigos, familia o compañeros.
+                </Text>
+
+                <Pressable
+                  onPress={goCreate}
+                  style={{
+                    marginTop: 20,
+                    backgroundColor: "#22c55e",
+                    paddingHorizontal: 20,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: "#16a34a",
+                  }}
+                >
+                  <Text style={{ color: "#0b1220", fontWeight: "800" }}>Crear mi primer grupo</Text>
+                </Pressable>
+              </View>
+          }
+        />
+      )}
 
       {/* FAB crear grupo */}
       <Pressable

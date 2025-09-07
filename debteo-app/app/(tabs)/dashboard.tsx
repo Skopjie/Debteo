@@ -208,7 +208,7 @@ export default function Dashboard() {
           </Pressable>
 
           <Pressable
-            onPress={() => router.push("/(tabs)/settings")} // o tu ruta de perfil
+            onPress={() => router.push("/profile/me")} // o tu ruta de perfil
             style={{
               flex: 1,
               borderRadius: 14,

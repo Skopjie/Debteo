@@ -42,53 +42,60 @@ export default function AppHeader() {
       <View style={{ paddingHorizontal: 16 }}>
         {/* Fila superior: avatar + nombre + ajustes */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-            <Image
-              source={
-                user?.avatarUrl
-                  ? { uri: user.avatarUrl }
-                  : require('@/assets/images/adaptive-icon.png')
-              }
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#1f2937' }}
-            />
-            <View style={{ flex: 1 }}>
-              {/* 1) Nombre */}
-              <Text numberOfLines={1} style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
-                {user?.name ?? 'Usuario'}
-              </Text>
+          <Pressable
+            onPress={() => {
+              router.push("/profile/me");
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+              <Image
+                source={
+                  user?.avatarUrl
+                    ? { uri: user.avatarUrl }
+                    : require('@/assets/images/adaptive-icon.png')
+                }
+                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#1f2937' }}
+              />
+              <View style={{ flex: 1 }}>
+                {/* 1) Nombre */}
+                <Text numberOfLines={1} style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>
+                  {user?.name ?? 'Usuario'}
+                </Text>
 
-              {/* 2) Único bloque compacto: badge + porcentaje */}
-              <View
-                style={{
-                  marginTop: 6,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 10,
-                }}
-              >
-
-                {/* badge */}
+                {/* 2) Único bloque compacto: badge + porcentaje */}
                 <View
                   style={{
+                    marginTop: 6,
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 6,
-                    backgroundColor: status.bg,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 999,
-                    borderWidth: 1,
-                    borderColor: '#1f2a44',
+                    gap: 10,
                   }}
                 >
-                  <Ionicons name={status.icon} size={14} color={status.fg} />
-                  <Text style={{ color: status.fg, fontSize: 12, fontWeight: '800' }}>
-                    {status.label} {onTimePct}%
-                  </Text>
+
+                  {/* badge */}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      backgroundColor: status.bg,
+                      paddingHorizontal: 10,
+                      paddingVertical: 6,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: '#1f2a44',
+                    }}
+                  >
+                    <Ionicons name={status.icon} size={14} color={status.fg} />
+                    <Text style={{ color: status.fg, fontSize: 12, fontWeight: '800' }}>
+                      {status.label} {onTimePct}%
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
+          </Pressable>
 
           <Pressable onPress={() => router.push('/(tabs)/settings')} style={{ padding: 6 }}>
             <Ionicons name="settings-outline" size={22} color="#e2e8f0" />
